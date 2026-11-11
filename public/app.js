@@ -228,6 +228,54 @@ async function loadSampleData() {
   }
 }
 
+// Optimize and compress images before uploading (Drastically speeds up upload & processing!)
+async function optimizeImage(file) {
+  return new Promise((resolve) => {
+    // If already small (< 400KB), return as is
+    if (file.size < 400 * 1024) {
+      resolve(file);
+      return;
+    }
+    const img = new Image();
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      img.onload = () => {
+        const maxDim = 1800; // Optimal resolution for razor-sharp OCR without heavy file size
+        let width = img.width;
+        let height = img.height;
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        canvas.toBlob(
+          (blob) => {
+            if (blob && blob.size < file.size) {
+              const optimizedFile = new File([blob], file.name, { type: 'image/jpeg' });
+              resolve(optimizedFile);
+            } else {
+              resolve(file);
+            }
+          },
+          'image/jpeg',
+          0.85
+        );
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 async function processWithAI() {
   if (state.selectedFiles.length === 0) {
     showToast('សូមជ្រើសរើស File រូបភាពជាមុនសិន!', 'warning');
@@ -240,20 +288,48 @@ async function processWithAI() {
     return;
   }
 
-  const formData = new FormData();
-  state.selectedFiles.forEach(file => {
-    formData.append('images', file);
-  });
-  if (state.apiKey) {
-    formData.append('apiKey', state.apiKey);
-  }
-
   btnProcessAI.disabled = true;
   btnProcessAI.classList.add('opacity-75', 'cursor-not-allowed');
   processStatus.classList.remove('hidden');
-  processStatus.textContent = 'កំពុងដំណើរការវិភាគរូបភាព និងអានអក្សរដោយ AI (Gemini Vision)...';
+  processStatus.innerHTML = `
+    <div class="flex items-center justify-center space-x-2 text-slate-600 font-medium">
+      <svg class="animate-spin h-4 w-4 text-emerald-600" viewBox="0 0 24 24" fill="none">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+      </svg>
+      <span>កំពុងរៀបចំ និងបង្ហាប់រូបភាព (Optimizing)...</span>
+    </div>
+  `;
+
+  // Start elapsed timer
+  let elapsed = 0;
+  let timerInterval = null;
 
   try {
+    // Compress and prepare files
+    const optimizedFiles = await Promise.all(state.selectedFiles.map(f => optimizeImage(f)));
+
+    const formData = new FormData();
+    optimizedFiles.forEach(file => {
+      formData.append('images', file);
+    });
+    if (state.apiKey) {
+      formData.append('apiKey', state.apiKey);
+    }
+
+    timerInterval = setInterval(() => {
+      elapsed++;
+      processStatus.innerHTML = `
+        <div class="flex items-center justify-center space-x-2 text-emerald-700 font-medium">
+          <svg class="animate-spin h-4 w-4 text-emerald-600" viewBox="0 0 24 24" fill="none">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+          </svg>
+          <span>AI កំពុងវិភាគ និងទាញយកទិន្នន័យ... (${elapsed} វិនាទី)</span>
+        </div>
+      `;
+    }, 1000);
+
     const response = await fetch('/api/extract', {
       method: 'POST',
       body: formData
@@ -267,7 +343,7 @@ async function processWithAI() {
     state.tableData = result.data;
     renderMetadata(result.data);
     renderTableRows(result.data.rows || []);
-    showToast('បម្លែងរូបភាពដោយជោគជ័យ!', 'success');
+    showToast(`បម្លែងរូបភាពដោយជោគជ័យក្នុងរយៈពេល ${elapsed} វិនាទី!`, 'success');
   } catch (err) {
     console.error('Processing error:', err);
     let errorMsg = err.message || 'បម្លែងមិនបានជោគជ័យ';
@@ -279,6 +355,7 @@ async function processWithAI() {
     } catch (e) {}
     showToast(errorMsg, 'error');
   } finally {
+    if (timerInterval) clearInterval(timerInterval);
     btnProcessAI.disabled = false;
     btnProcessAI.classList.remove('opacity-75', 'cursor-not-allowed');
     processStatus.classList.add('hidden');
