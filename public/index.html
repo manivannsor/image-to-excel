@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Image to Excel Converter | កម្មវិធីបម្លែងរូបភាពទៅជា Excel</title>
+  <!-- Google Fonts: Kantumruy Pro & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Kantumruy+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="style.css">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Kantumruy Pro"', 'Inter', 'sans-serif'],
+          },
+          colors: {
+            primary: {
+              50: '#f0fdf4',
+              100: '#dcfce7',
+              500: '#22c55e',
+              600: '#16a34a',
+              700: '#15803d',
+              800: '#166534',
+            },
+            excel: '#107c41',
+            excelHover: '#0b5c30'
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col font-sans">
+
+  <!-- TOP NAVIGATION HEADER -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-emerald-600 flex items-center justify-center text-white shadow-md shadow-emerald-200">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+          </svg>
+        </div>
+        <div>
+          <h1 class="font-bold text-lg text-slate-900 leading-tight">Image To Excel Converter</h1>
+          <p class="text-xs text-slate-500">កម្មវិធីស្កេន និងបម្លែងតារាងរូបភាពទៅជា Microsoft Excel (.xlsx)</p>
+        </div>
+      </div>
+
+      <!-- Action items in Header -->
+      <div class="flex items-center space-x-3">
+        <button id="btnLoadSample" class="inline-flex items-center px-3.5 py-1.5 border border-slate-300 text-xs font-semibold rounded-lg text-slate-700 bg-white hover:bg-slate-50 transition shadow-sm">
+          <svg class="w-4 h-4 mr-1.5 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M10 2a8 8 0 100 16 8 8 0 000-16zm1 11H9v-2h2v2zm0-4H9V5h2v4z"/>
+          </svg>
+          មើលទិន្នន័យគំរូ (Load Sample)
+        </button>
+
+        <button id="btnOpenApiKeyModal" class="inline-flex items-center px-3.5 py-1.5 border border-slate-300 text-xs font-semibold rounded-lg text-slate-700 bg-white hover:bg-slate-50 transition shadow-sm">
+          <svg class="w-4 h-4 mr-1.5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path>
+          </svg>
+          <span id="apiKeyStatusLabel">Gemini API Key</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 flex flex-col space-y-6 w-full">
+    
+    <!-- TOP UPLOAD SECTION -->
+    <section class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+        <!-- Dropzone -->
+        <div class="lg:col-span-8">
+          <div id="dropzone" class="border-2 border-dashed border-slate-300 hover:border-emerald-500 hover:bg-emerald-50/30 transition rounded-xl p-6 text-center cursor-pointer bg-slate-50 flex flex-col items-center justify-center min-h-[160px]">
+            <input type="file" id="fileInput" multiple accept="image/*" class="hidden">
+            <div class="w-12 h-12 mb-3 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+              </svg>
+            </div>
+            <p class="text-sm font-semibold text-slate-700">
+              ទម្លាក់ File រូបភាពនៅទីនេះ ឬ <span class="text-emerald-600 underline">ចុចដើម្បីជ្រើសរើស (Browse)</span>
+            </p>
+            <p class="text-xs text-slate-500 mt-1">គាំទ្ររូបភាពច្បាស់ JPG, PNG, WEBP (អាចដាក់បានច្រើនទំព័រក្នុងពេលតែមួយ e.g. ទំព័រ 1 និង 2)</p>
+          </div>
+          <!-- Uploaded files pills -->
+          <div id="fileListContainer" class="mt-3 flex flex-wrap gap-2"></div>
+        </div>
+
+        <!-- Action Card -->
+        <div class="lg:col-span-4 flex flex-col justify-between space-y-4 bg-slate-50 p-5 rounded-xl border border-slate-200">
+          <div>
+            <h3 class="text-sm font-bold text-slate-800">ស្កេន និងបម្លែងដោយស្វ័យប្រវត្តិ</h3>
+            <p class="text-xs text-slate-500 mt-1">ប្រព័ន្ធប្រើប្រាស់ AI Gemini Vision ដ៏ទំនើប អាចអានអក្សរខ្មែរ អក្សរអង់គ្លេស និងលេខពិន្ទុសរសេរដៃបាន 100% ត្រឹមត្រូវ និងរក្សាទម្រង់ដើម។</p>
+          </div>
+          
+          <div class="space-y-2">
+            <button id="btnProcessAI" class="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl shadow-md shadow-emerald-200 transition flex items-center justify-center space-x-2">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+              </svg>
+              <span>ចាប់ផ្ដើមបម្លែង (Convert with AI)</span>
+            </button>
+            <p id="processStatus" class="text-xs text-center text-slate-500 hidden"></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- WORKSPACE: PREVIEW & EDITABLE DATA GRID -->
+    <section class="bg-white rounded-2xl shadow-sm border border-slate-200 flex-1 flex flex-col overflow-hidden">
+      <!-- Toolbar -->
+      <div class="px-6 py-4 border-b border-slate-200 bg-slate-50/70 flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-center space-x-4">
+          <div class="flex items-center space-x-2">
+            <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+            <h2 class="font-bold text-slate-800 text-sm sm:text-base">ទិន្នន័យតារាង (Table Preview & Editor)</h2>
+          </div>
+          <span id="studentCountBadge" class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">សិស្សសរុប: 22 នាក់</span>
+          <span id="genderStatsBadge" class="hidden sm:inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-200 text-slate-700">ស្រី: 14 | ប្រុស: 8</span>
+        </div>
+
+        <div class="flex items-center space-x-2">
+          <!-- View toggle -->
+          <div class="inline-flex rounded-lg border border-slate-200 p-0.5 bg-white shadow-sm text-xs">
+            <button id="tabTableOnly" class="px-3 py-1 font-semibold rounded-md bg-emerald-50 text-emerald-700 shadow-xs">តារាងទិន្នន័យ (Table)</button>
+            <button id="tabSplitView" class="px-3 py-1 font-semibold rounded-md text-slate-600 hover:text-slate-900">ផ្ទឹមជាមួយរូបភាព (Split View)</button>
+          </div>
+
+          <button id="btnAddRow" class="inline-flex items-center px-3 py-1.5 border border-slate-200 text-xs font-semibold rounded-lg text-slate-700 bg-white hover:bg-slate-50 shadow-sm transition">
+            <svg class="w-3.5 h-3.5 mr-1 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+            </svg>
+            បន្ថែមជួរ (Add Row)
+          </button>
+
+          <!-- Export Excel Button -->
+          <button id="btnExportExcel" class="inline-flex items-center px-4 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-lg shadow-sm transition space-x-1.5">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm1 7V3.5L18.5 9H15zM7.5 13.5l1.8 3.2-1.8 3.3h1.6l1-2 1 2h1.6l-1.8-3.3 1.8-3.2h-1.6l-1 2-1-2H7.5z"/>
+            </svg>
+            <span>ទាញយកជា Excel (.xlsx)</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Main Body Container (Split or Full) -->
+      <div class="flex-1 flex flex-col lg:flex-row overflow-hidden min-h-[500px]">
+        <!-- LEFT: Image Viewer (Visible in Split View) -->
+        <div id="imageViewerPane" class="hidden lg:w-1/3 border-b lg:border-b-0 lg:border-r border-slate-200 bg-slate-100 flex flex-col p-4">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-bold text-slate-600">រូបភាពដើម (Original Image)</span>
+            <div class="flex items-center space-x-1" id="imageSwitcher"></div>
+          </div>
+          <div class="flex-1 bg-white rounded-xl border border-slate-200 overflow-auto flex items-center justify-center p-2 relative">
+            <img id="previewImage" src="/samples/page1_sample.jpg" alt="Original Image" class="max-w-full h-auto object-contain rounded shadow-sm">
+          </div>
+        </div>
+
+        <!-- RIGHT: Spreadsheet Table Grid & Header Info -->
+        <div id="tableContainerPane" class="flex-1 flex flex-col overflow-auto p-4 sm:p-6 bg-white">
+          
+          <!-- Document Header Info Card -->
+          <div class="mb-4 bg-slate-50 border border-slate-200 rounded-xl p-4">
+            <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 text-xs">
+              <div>
+                <label class="block text-slate-400 font-semibold mb-1">ស្ថាប័ន / សាលា</label>
+                <input type="text" id="metaSchoolName" class="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg text-slate-800 bg-white font-medium" value="សាលាអន្តរជាតិ វេស្ទើន">
+              </div>
+              <div>
+                <label class="block text-slate-400 font-semibold mb-1">ចំណងជើង</label>
+                <input type="text" id="metaTitle" class="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg text-slate-800 bg-white font-medium" value="តារាងសម្រង់ពិន្ទុ / Score List">
+              </div>
+              <div>
+                <label class="block text-slate-400 font-semibold mb-1">Teacher Name</label>
+                <input type="text" id="metaTeacher" class="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg text-slate-800 bg-white font-medium" value="Bin Soratha">
+              </div>
+              <div>
+                <label class="block text-slate-400 font-semibold mb-1">Subject</label>
+                <input type="text" id="metaSubject" class="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg text-slate-800 bg-white font-medium" value="Math">
+              </div>
+              <div>
+                <label class="block text-slate-400 font-semibold mb-1">Grade / For</label>
+                <div class="flex space-x-1">
+                  <input type="text" id="metaGrade" class="w-1/2 px-2 py-1.5 border border-slate-300 rounded-lg text-slate-800 bg-white font-medium text-center" value="1A">
+                  <input type="text" id="metaQuarter" class="w-1/2 px-2 py-1.5 border border-slate-300 rounded-lg text-slate-800 bg-white font-medium text-center" value="Quarter 1">
+                </div>
+              </div>
+              <div>
+                <label class="block text-slate-400 font-semibold mb-1">Date កាលបរិច្ឆេទ</label>
+                <input type="text" id="metaDate" class="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg text-slate-800 bg-white font-medium text-center" value="21-Sep-26">
+              </div>
+            </div>
+          </div>
+
+          <!-- Spreadsheet Table -->
+          <div class="overflow-x-auto border border-slate-300 rounded-lg shadow-xs">
+            <table id="dataTable" class="w-full text-xs text-left border-collapse">
+              <thead>
+                <!-- Top Header Row -->
+                <tr class="bg-slate-200 text-slate-800 font-bold border-b border-slate-300 text-center divide-x divide-slate-300">
+                  <th rowspan="2" class="p-2 w-10">N°</th>
+                  <th rowspan="2" class="p-2 min-w-[170px] text-left">Name</th>
+                  <th rowspan="2" class="p-2 min-w-[160px] text-left">ឈ្មោះ</th>
+                  <th class="p-1 w-12">Sex</th>
+                  <th class="p-1 w-14">Group</th>
+                  <th rowspan="2" class="p-1 w-14">Conduct</th>
+                  <th rowspan="2" class="p-1 w-12">C.P.</th>
+                  <th colspan="6" class="p-1.5 bg-slate-300">កិច្ចការផ្ទះ / Homework</th>
+                  <th colspan="6" class="p-1.5 bg-slate-200">តេស្តខ្លី / Quizzes</th>
+                  <th colspan="3" class="p-1.5 bg-slate-300">Monthly Test<br>តេស្តប្រចាំខែ</th>
+                  <th rowspan="2" class="p-1 w-10">លុប</th>
+                </tr>
+                <!-- Sub Header Row -->
+                <tr class="bg-slate-200 text-slate-700 font-semibold border-b border-slate-300 text-center divide-x divide-slate-300">
+                  <th class="p-1 text-[11px]">ភេទ</th>
+                  <th class="p-1 text-[11px]">ក្រុម</th>
+                  <!-- Homework 1-6 -->
+                  <th class="p-1 w-9 bg-slate-300/80">1</th>
+                  <th class="p-1 w-9 bg-slate-300/80">2</th>
+                  <th class="p-1 w-9 bg-slate-300/80">3</th>
+                  <th class="p-1 w-9 bg-slate-300/80">4</th>
+                  <th class="p-1 w-9 bg-slate-300/80">5</th>
+                  <th class="p-1 w-9 bg-slate-300/80">6</th>
+                  <!-- Quizzes 1-6 -->
+                  <th class="p-1 w-9">1</th>
+                  <th class="p-1 w-9">2</th>
+                  <th class="p-1 w-9">3</th>
+                  <th class="p-1 w-9">4</th>
+                  <th class="p-1 w-9">5</th>
+                  <th class="p-1 w-9">6</th>
+                  <!-- Monthly Test 1-3 -->
+                  <th class="p-1 w-11 bg-slate-300/80">1</th>
+                  <th class="p-1 w-11 bg-slate-300/80">2</th>
+                  <th class="p-1 w-11 bg-slate-300/80">3</th>
+                </tr>
+              </thead>
+              <tbody id="tableBody" class="divide-y divide-slate-200 bg-white">
+                <!-- Dynamically populated rows -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Bottom Footer Notes Preview -->
+          <div class="mt-4 p-3 bg-slate-50 border border-slate-200 rounded-lg text-slate-600 text-[11px] leading-relaxed">
+            <p class="font-medium text-slate-700"><strong>ចំណាំ ៖</strong> តារាងសម្រង់ពិន្ទុនេះគឺសម្រាប់លោកគ្រូអ្នកគ្រូកត់ពិន្ទុចូល ដើម្បីងាយស្រួលក្នុងការបញ្ចូលពិន្ទុក្នុងតារាងសម្រង់ពិន្ទុអេឡិចត្រូនិក (E-Gradebook) ។</p>
+            <p class="text-slate-500 mt-0.5">* NOTE: This list is for teachers to keep record of all kinds of scores which is served as hard copies for egrade-book input.</p>
+          </div>
+
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- API KEY MODAL -->
+  <div id="apiKeyModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 hidden">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+        <h3 class="font-bold text-base text-slate-900 flex items-center">
+          <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path>
+          </svg>
+          Google Gemini API Key
+        </h3>
+        <button id="btnCloseApiKeyModal" class="text-slate-400 hover:text-slate-600 text-lg">&times;</button>
+      </div>
+
+      <div class="space-y-4">
+        <p class="text-xs text-slate-600">
+          ដើម្បីស្កេន និងបម្លែងរូបភាពដោយស្វ័យប្រវត្តិ សូមបញ្ចូល Gemini API Key របស់អ្នក។ Key នេះត្រូវបានរក្សាទុកតែលើ Browser របស់អ្នកផ្ទាល់ (localStorage) ប្រកបដោយសុវត្ថិភាព។
+        </p>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Gemini API Key</label>
+          <input type="password" id="inputApiKey" placeholder="AIzaSy..." class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-hidden">
+        </div>
+
+        <div class="bg-blue-50 border border-blue-200 p-3 rounded-lg text-xs text-blue-800">
+          <span class="font-bold">មិនទាន់មាន Key មែនទេ?</span> អ្នកអាចបង្កើត Free API Key បានក្នុងរយៈពេល 30 វិនាទីនៅ
+          <a href="https://aistudio.google.com/app/apikey" target="_blank" class="underline font-semibold text-blue-700 hover:text-blue-900">Google AI Studio</a>។
+        </div>
+
+        <div class="flex justify-end space-x-2 pt-2">
+          <button id="btnCancelApiKey" class="px-4 py-2 border border-slate-300 text-xs font-semibold rounded-lg text-slate-700 hover:bg-slate-50 transition">បោះបង់</button>
+          <button id="btnSaveApiKey" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg transition shadow-sm">រក្សាទុក (Save)</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST CONTAINER -->
+  <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
+

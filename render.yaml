@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: image-to-excel
+    runtime: node
+    plan: free
+    region: singapore # Closest region to Cambodia for fast loading
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: GEMINI_API_KEY
+        sync: false
