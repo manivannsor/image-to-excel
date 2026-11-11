@@ -64,6 +64,13 @@ const sampleExtractedData = {
   ]
 };
 
+// API: Check server configuration
+app.get('/api/config', (req, res) => {
+  res.json({
+    hasServerApiKey: !!process.env.GEMINI_API_KEY
+  });
+});
+
 // API: Load preloaded sample data
 app.get('/api/sample-data', (req, res) => {
   res.json({

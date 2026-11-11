@@ -1,6 +1,7 @@
 // State Management
 const state = {
   apiKey: localStorage.getItem('GEMINI_API_KEY') || '',
+  hasServerApiKey: false,
   selectedFiles: [],
   tableData: null,
   currentImageIndex: 0,
@@ -46,15 +47,28 @@ const inputApiKey = document.getElementById('inputApiKey');
 const apiKeyStatusLabel = document.getElementById('apiKeyStatusLabel');
 
 // Initialize
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+  await checkServerConfig();
   updateApiKeyStatusUI();
   setupEventListeners();
   loadSampleData(); // Load pre-extracted data so user sees working result instantly!
 });
 
+async function checkServerConfig() {
+  try {
+    const res = await fetch('/api/config');
+    const data = await res.json();
+    state.hasServerApiKey = !!data.hasServerApiKey;
+  } catch (e) {
+    console.warn('Could not check server config', e);
+  }
+}
+
 function updateApiKeyStatusUI() {
   if (state.apiKey) {
-    apiKeyStatusLabel.innerHTML = `<span class="inline-block w-2 h-2 rounded-full bg-emerald-500 mr-1.5"></span>API Key: បានភ្ជាប់`;
+    apiKeyStatusLabel.innerHTML = `<span class="inline-block w-2 h-2 rounded-full bg-emerald-500 mr-1.5"></span>API Key: ផ្ទាល់ខ្លួន (Custom)`;
+  } else if (state.hasServerApiKey) {
+    apiKeyStatusLabel.innerHTML = `<span class="inline-block w-2 h-2 rounded-full bg-emerald-500 mr-1.5"></span>API Key: រួចរាល់ (Server)`;
   } else {
     apiKeyStatusLabel.innerHTML = `<span class="inline-block w-2 h-2 rounded-full bg-amber-500 mr-1.5"></span>បញ្ចូល API Key`;
   }
@@ -109,10 +123,29 @@ function setupEventListeners() {
   });
 
   // API Key Modal
+  const serverKeyNotice = document.getElementById('serverKeyNotice');
+  const btnClearApiKey = document.getElementById('btnClearApiKey');
+
   btnOpenApiKeyModal.addEventListener('click', () => {
     inputApiKey.value = state.apiKey;
+    if (state.hasServerApiKey) {
+      serverKeyNotice.classList.remove('hidden');
+    } else {
+      serverKeyNotice.classList.add('hidden');
+    }
     apiKeyModal.classList.remove('hidden');
   });
+
+  if (btnClearApiKey) {
+    btnClearApiKey.addEventListener('click', () => {
+      state.apiKey = '';
+      localStorage.removeItem('GEMINI_API_KEY');
+      inputApiKey.value = '';
+      updateApiKeyStatusUI();
+      apiKeyModal.classList.add('hidden');
+      showToast('បានលុប Key ផ្ទាល់ខ្លួន។ ឥឡូវប្រព័ន្ធប្រើប្រាស់ Server Key!', 'info');
+    });
+  }
 
   btnCloseApiKeyModal.addEventListener('click', () => apiKeyModal.classList.add('hidden'));
   btnCancelApiKey.addEventListener('click', () => apiKeyModal.classList.add('hidden'));
@@ -201,7 +234,7 @@ async function processWithAI() {
     return;
   }
 
-  if (!state.apiKey) {
+  if (!state.apiKey && !state.hasServerApiKey) {
     apiKeyModal.classList.remove('hidden');
     showToast('សូមបញ្ចូល Gemini API Key ដើម្បីដំណើរការ', 'warning');
     return;
@@ -211,7 +244,9 @@ async function processWithAI() {
   state.selectedFiles.forEach(file => {
     formData.append('images', file);
   });
-  formData.append('apiKey', state.apiKey);
+  if (state.apiKey) {
+    formData.append('apiKey', state.apiKey);
+  }
 
   btnProcessAI.disabled = true;
   btnProcessAI.classList.add('opacity-75', 'cursor-not-allowed');
